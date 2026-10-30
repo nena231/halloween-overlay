@@ -52,9 +52,7 @@
       width: 220px;
       height: 220px;
       border-radius: 50%;
-      /* Dynamic Gradient */
       background: radial-gradient(circle at 35% 35%, #fffdf0 0%, var(--moon-color-mid) 45%, var(--moon-color-dark) 100%);
-      /* Dynamic Glow */
       box-shadow: 
         0 0 50px rgba(var(--moon-rgb), 0.9),
         0 0 120px rgba(var(--moon-rgb), 0.6),
@@ -64,18 +62,8 @@
     }
 
     @keyframes moonGlow {
-      0% {
-        box-shadow: 
-          0 0 50px rgba(var(--moon-rgb), 0.9),
-          0 0 110px rgba(var(--moon-rgb), 0.6),
-          0 0 180px rgba(var(--moon-rgb), 0.4);
-      }
-      100% {
-        box-shadow: 
-          0 0 70px rgba(var(--moon-rgb), 1),
-          0 0 140px rgba(var(--moon-rgb), 0.8),
-          0 0 240px rgba(var(--moon-rgb), 0.6);
-      }
+      0% { box-shadow: 0 0 50px rgba(var(--moon-rgb), 0.9), 0 0 110px rgba(var(--moon-rgb), 0.6), 0 0 180px rgba(var(--moon-rgb), 0.4); }
+      100% { box-shadow: 0 0 70px rgba(var(--moon-rgb), 1), 0 0 140px rgba(var(--moon-rgb), 0.8), 0 0 240px rgba(var(--moon-rgb), 0.6); }
     }
 
     #effects-canvas {
@@ -156,18 +144,13 @@
     .control-group button:hover { background: linear-gradient(to bottom, #ffeaa7, #e67e22); color: #1a0805; }
     .control-group button:disabled { filter: grayscale(100%); cursor: not-allowed; }
 
-    #reset-button {
-      background: linear-gradient(to bottom, #e74c3c, #c0392b);
-    }
+    #reset-button { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
     #reset-button:hover { background: linear-gradient(to bottom, #ff7675, #e74c3c); color: #fff;}
     #reset-button:disabled { background: #555; color: #888; box-shadow: none; }
 
-    .streamer-tools {
-      border-top: 1px dashed rgba(241, 196, 15, 0.4);
-      padding-top: 10px;
-      margin-top: 10px;
-    }
+    .streamer-tools { border-top: 1px dashed rgba(241, 196, 15, 0.4); padding-top: 10px; margin-top: 10px; }
 
+    /* Hides panel in OBS */
     .obs-mode #control-panel { display: none; }
 
     /* =========================================
@@ -216,7 +199,6 @@
       color: #fff; 
       -webkit-text-stroke: 2px black;
       text-shadow: 0 4px 15px rgba(0,0,0,0.9);
-      /* Added to prevent very long tricks from overflowing */
       max-width: 90vw;
       word-wrap: break-word;
       line-height: 1.2;
@@ -287,9 +269,27 @@
   </div>
 
   <script>
-    if (window.location.search.includes('obs=true')) {
+    // Checks if you are in OBS mode
+    const isObsMode = window.location.search.includes('obs=true');
+    if (isObsMode) {
       document.body.classList.add('obs-mode');
     }
+
+    // =========================================
+    // 🎮 KEYBOARD CONTROLS (R TO ROLL, C TO RESET)
+    // =========================================
+    document.addEventListener('keydown', function(event) {
+      if (isObsMode) {
+        // Press 'R' to Roll
+        if (event.key.toLowerCase() === 'r') {
+          triggerRoll();
+        }
+        // Press 'C' to Reset/Close
+        if (event.key.toLowerCase() === 'c') {
+          resetChest();
+        }
+      }
+    });
 
     /* =========================================
        1. RNG & ODDS LOGIC
@@ -303,17 +303,9 @@
 
     const TRICKS = {
       standard: [ 
-        "You're a cuck", 
-        "Double roll to next winner", 
-        "Timed out 10 minutes", 
-        "Scammed",
-        "Psych! It's a $5 treat.", 
-        "The streamer steals 50% of your next win.", 
-        "Dance on stream for 30 seconds or lose.",
-        "NO GIVEAWAY",
-        "MOOD OFF",
-        "YOU WON 1 BETCLOSER NET WORTH",
-        "YOU SLEEPING NEXT TO BADRUDEBOI TODAY"
+        "You're a cuck", "Double roll to next winner", "Timed out 10 minutes", "Scammed",
+        "Psych! It's a $5 treat.", "The streamer steals 50% of your next win.", "Dance on stream for 30 seconds or lose.",
+        "NO GIVEAWAY", "MOOD OFF", "YOU WON 1 BETCLOSER NET WORTH", "YOU SLEEPING NEXT TO BADRUDEBOI TODAY"
       ],
       legendary: [ "Banned from giveaways for next month" ]
     };
@@ -326,26 +318,16 @@
     };
 
     const COLORS = {
-      common: '#cccccc', 
-      uncommon: '#2ecc71',
-      rare: '#3498db',
-      legendary: '#f1c40f',
-      trick: '#e74c3c',
-      legendaryTrick: '#8e44ad'
+      common: '#cccccc', uncommon: '#2ecc71', rare: '#3498db',
+      legendary: '#f1c40f', trick: '#e74c3c', legendaryTrick: '#8e44ad'
     };
 
-    // Default colors (Spooky Orange)
     const DEFAULT_ORANGE = '#e67e22'; 
     const DEFAULT_ORANGE_RGB = '230, 126, 34';
 
-    // Global State for Eyes & Fog
     let eyeGlowColor = DEFAULT_ORANGE; 
     let forceEyeColor = false; 
-    
-    // We start with the default fog color (orange)
-    let currentFogR = 245; 
-    let currentFogG = 158; 
-    let currentFogB = 11;
+    let currentFogR = 245, currentFogG = 158, currentFogB = 11;
 
     function getWeightedRandom(weightsObject, itemsObject) {
       let totalWeight = 0;
@@ -361,33 +343,20 @@
       }
     }
 
-    // Helper: Hex to RGB for the fog
     function hexToRgb(hex) {
       let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-      } : { r: 230, g: 126, b: 34 };
+      return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 230, g: 126, b: 34 };
     }
 
-    // Helper: Update the whole environment (Moon, Fog, Eyes)
     function setEnvironmentColor(hexColor, rgbString) {
-      // 1. Update the Moon (Sun) CSS variables
       document.documentElement.style.setProperty('--moon-rgb', rgbString);
       document.documentElement.style.setProperty('--moon-color-mid', hexColor);
       
-      // Darken the second color slightly for the moon gradient depth
       const rgbObj = hexToRgb(hexColor);
       const darkerHex = `rgb(${Math.max(0, rgbObj.r - 40)}, ${Math.max(0, rgbObj.g - 40)}, ${Math.max(0, rgbObj.b - 40)})`;
       document.documentElement.style.setProperty('--moon-color-dark', darkerHex);
 
-      // 2. Update the Fog
-      currentFogR = rgbObj.r;
-      currentFogG = rgbObj.g;
-      currentFogB = rgbObj.b;
-
-      // 3. Set Eye Color Reference
+      currentFogR = rgbObj.r; currentFogG = rgbObj.g; currentFogB = rgbObj.b;
       eyeGlowColor = hexColor;
     }
 
@@ -404,50 +373,39 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     scene.add(new THREE.AmbientLight(0xfff5e6, 1.2));
-    const keyLight = new THREE.DirectionalLight(0xffd700, 2.0);
-    keyLight.position.set(5, 5, 4); scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight(0xff6600, 1.0);
-    fillLight.position.set(-5, 2, 3); scene.add(fillLight);
+    const keyLight = new THREE.DirectionalLight(0xffd700, 2.0); keyLight.position.set(5, 5, 4); scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0xff6600, 1.0); fillLight.position.set(-5, 2, 3); scene.add(fillLight);
 
     const chestLight = new THREE.PointLight(0xffffff, 0, 8, 2);
-    chestLight.position.set(0, 0.5, 0); 
-    scene.add(chestLight);
+    chestLight.position.set(0, 0.5, 0); scene.add(chestLight);
 
-    const chestContainer = new THREE.Group();
-    scene.add(chestContainer);
+    const chestContainer = new THREE.Group(); scene.add(chestContainer);
 
     let chestModel = null, mixer = null, animationsMap = {}, activeAction = null;
-    let isRolling = false;
-    let revealTimer = null;
+    let isRolling = false, revealTimer = null;
     const clock = new THREE.Clock();
-    const initialChestPos = new THREE.Vector3();
-    const initialChestScale = new THREE.Vector3(1, 1, 1);
+    const initialChestPos = new THREE.Vector3(), initialChestScale = new THREE.Vector3(1, 1, 1);
 
     const loader = new THREE.GLTFLoader();
     loader.load('chest.glb', function (gltf) {
-      chestModel = gltf.scene;
-      chestContainer.add(chestModel);
+      chestModel = gltf.scene; chestContainer.add(chestModel);
 
-      const box = new THREE.Box3().setFromObject(chestModel);
-      const center = box.getCenter(new THREE.Vector3());
+      const box = new THREE.Box3().setFromObject(chestModel); 
+      const center = box.getCenter(new THREE.Vector3()); 
       const size = box.getSize(new THREE.Vector3());
       
-      chestModel.position.sub(center);
-      chestModel.position.y -= 0.16
+      chestModel.position.sub(center); chestModel.position.y -= 0.16; 
       initialChestPos.copy(chestModel.position);
 
       const maxDim = Math.max(size.x, size.y, size.z);
       chestContainer.scale.setScalar(1.2 / maxDim);
       
-      // --- YOUR CUSTOM POSITION (LOCKED IN) ---
       chestContainer.position.y = -.19
       chestContainer.rotation.x = -0.27
       chestContainer.rotation.y = Math.PI + 0.2 
-      // ----------------------------------------
 
       if (gltf.animations && gltf.animations.length > 0) {
         mixer = new THREE.AnimationMixer(chestModel);
-        
         gltf.animations.forEach((clip) => {
           clip.tracks = clip.tracks.filter(track => {
             if (track.name.includes('.scale')) return false; 
@@ -456,9 +414,7 @@
           });
           animationsMap[clip.name] = mixer.clipAction(clip);
         });
-
         mixer.addEventListener('finished', onAnimationFinished);
-
         if (animationsMap['Armature|close_idle']) {
           activeAction = animationsMap['Armature|close_idle'];
           activeAction.play();
@@ -474,12 +430,8 @@
       if (activeAction) activeAction.fadeOut(0.3);
       nextAction.reset().setEffectiveTimeScale(1).setEffectiveWeight(1);
       
-      if (loopOnce) {
-        nextAction.setLoop(THREE.LoopOnce, 1);
-        nextAction.clampWhenFinished = true;
-      } else {
-        nextAction.setLoop(THREE.LoopRepeat, Infinity);
-      }
+      if (loopOnce) { nextAction.setLoop(THREE.LoopOnce, 1); nextAction.clampWhenFinished = true; } 
+      else { nextAction.setLoop(THREE.LoopRepeat, Infinity); }
       
       nextAction.fadeIn(0.3).play();
       activeAction = nextAction;
@@ -488,13 +440,15 @@
     /* =========================================
        3. SEQUENCE LOGIC
        ========================================= */
-    
     function triggerRoll() {
       if (isRolling || !mixer) return;
       isRolling = true;
       
-      document.getElementById('roll-button').disabled = true;
-      document.getElementById('reset-button').disabled = true;
+      const rollBtn = document.getElementById('roll-button');
+      const resetBtn = document.getElementById('reset-button');
+      if (rollBtn) rollBtn.disabled = true;
+      if (resetBtn) resetBtn.disabled = true;
+      
       document.getElementById('result-overlay').classList.remove('show');
       
       const openAction = animationsMap['Armature|open'];
@@ -503,41 +457,33 @@
       if (openAction) {
         const duration = openAction.getClip().duration;
         const revealDelay = duration * 0.45 * 1000; 
-        
         if (revealTimer) clearTimeout(revealTimer);
-        revealTimer = setTimeout(() => {
-          showResult();
-        }, revealDelay);
-      } else {
-        showResult(); 
-      }
+        revealTimer = setTimeout(() => { showResult(); }, revealDelay);
+      } else { showResult(); }
     }
 
     function resetChest() {
       if (!mixer) return;
       
-      document.getElementById('reset-button').disabled = true;
+      const resetBtn = document.getElementById('reset-button');
+      if (resetBtn) resetBtn.disabled = true;
       
       const overlay = document.getElementById('result-overlay');
       overlay.classList.remove('show');
       
-      // Turn off the chest light
       chestLight.intensity = 0;
-
-      // REVERT ENVIRONMENT TO DEFAULT ORANGE
       setEnvironmentColor(DEFAULT_ORANGE, DEFAULT_ORANGE_RGB);
-      forceEyeColor = false; // Eyes go back to their base orange color
+      forceEyeColor = false; 
 
-      setTimeout(() => {
-        playSelectedAnimation('Armature|close', true);
-      }, 300); 
+      setTimeout(() => { playSelectedAnimation('Armature|close', true); }, 300); 
     }
 
     function onAnimationFinished(e) {
       if (e.action === animationsMap['Armature|close']) {
         playSelectedAnimation('Armature|close_idle');
         isRolling = false;
-        document.getElementById('roll-button').disabled = false;
+        const rollBtn = document.getElementById('roll-button');
+        if (rollBtn) rollBtn.disabled = false;
       }
     }
 
@@ -545,36 +491,23 @@
       if (!isRolling) return;
 
       let isTrick, result, color;
-      const forceType = document.getElementById('force-roll-type').value;
+      const forceDropdown = document.getElementById('force-roll-type');
+      const forceType = forceDropdown ? forceDropdown.value : 'random';
 
       if (forceType === 'common') {
-        isTrick = false;
-        result = { category: 'common', item: TREATS.common[Math.floor(Math.random() * TREATS.common.length)] };
-        color = COLORS.common;
+        isTrick = false; result = { category: 'common', item: TREATS.common[Math.floor(Math.random() * TREATS.common.length)] }; color = COLORS.common;
       } else if (forceType === 'uncommon') {
-        isTrick = false;
-        result = { category: 'uncommon', item: TREATS.uncommon[Math.floor(Math.random() * TREATS.uncommon.length)] };
-        color = COLORS.uncommon;
+        isTrick = false; result = { category: 'uncommon', item: TREATS.uncommon[Math.floor(Math.random() * TREATS.uncommon.length)] }; color = COLORS.uncommon;
       } else if (forceType === 'rare') {
-        isTrick = false;
-        result = { category: 'rare', item: TREATS.rare[Math.floor(Math.random() * TREATS.rare.length)] };
-        color = COLORS.rare;
+        isTrick = false; result = { category: 'rare', item: TREATS.rare[Math.floor(Math.random() * TREATS.rare.length)] }; color = COLORS.rare;
       } else if (forceType === 'legendary') {
-        isTrick = false;
-        result = { category: 'legendary', item: TREATS.legendary[Math.floor(Math.random() * TREATS.legendary.length)] };
-        color = COLORS.legendary;
+        isTrick = false; result = { category: 'legendary', item: TREATS.legendary[Math.floor(Math.random() * TREATS.legendary.length)] }; color = COLORS.legendary;
       } else if (forceType === 'standard-trick') {
-        isTrick = true;
-        result = { category: 'standard', item: TRICKS.standard[Math.floor(Math.random() * TRICKS.standard.length)] };
-        color = COLORS.trick;
+        isTrick = true; result = { category: 'standard', item: TRICKS.standard[Math.floor(Math.random() * TRICKS.standard.length)] }; color = COLORS.trick;
       } else if (forceType === 'legendary-trick') {
-        isTrick = true;
-        result = { category: 'legendary', item: TRICKS.legendary[0] };
-        color = COLORS.legendaryTrick;
+        isTrick = true; result = { category: 'legendary', item: TRICKS.legendary[0] }; color = COLORS.legendaryTrick;
       } else if (forceType === 'only-treats') {
-        isTrick = false;
-        result = getWeightedRandom(ODDS.treatWeights, TREATS);
-        color = COLORS[result.category];
+        isTrick = false; result = getWeightedRandom(ODDS.treatWeights, TREATS); color = COLORS[result.category];
       } else {
         isTrick = Math.random() * 100 < ODDS.trickPercent;
         if (isTrick) {
@@ -586,21 +519,14 @@
         }
       }
 
-      // Convert hex to RGB string for the Moon CSS
       const rgbObj = hexToRgb(color);
       const rgbString = `${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b}`;
 
-      // Force the whole environment to the rarity color
       setEnvironmentColor(color, rgbString);
-      
-      // Force all eyes to blink and change color
       forceEyeColor = true;
-      creepyEyes.forEach(e => {
-        e.isBlinking = true;
-        e.blinkEnd = Date.now() + 150;
-      });
+      
+      creepyEyes.forEach(e => { e.isBlinking = true; e.blinkEnd = Date.now() + 150; });
 
-      // Flash the 3D chest light
       chestLight.color.setStyle(color);
       chestLight.intensity = 8;
 
@@ -624,7 +550,8 @@
       aura.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
 
       overlay.classList.add('show');
-      document.getElementById('reset-button').disabled = false;
+      const resetBtn = document.getElementById('reset-button');
+      if (resetBtn) resetBtn.disabled = false;
     }
 
     window.addEventListener('resize', () => {
@@ -658,33 +585,15 @@
       bats.push({ x: Math.random() * width, y: Math.random() * (height * 0.45), speedX: Math.random() * 2.5 + 1.2, speedY: Math.sin(Math.random() * Math.PI) * 0.8, size: Math.random() * 12 + 10, wingAngle: 0, wingSpeed: Math.random() * 0.15 + 0.1 });
     }
 
-    // Generate Creepy Eyes (Default Base Color is Orange)
     let eyeAttempts = 0;
     while (creepyEyes.length < 15 && eyeAttempts < 1000) {
       eyeAttempts++;
       const newX = (width / 2) + ((Math.random() - 0.5) * (width * 0.6));
       const newY = height * 0.15 + Math.random() * (height * 0.35);
-      
       let tooClose = false;
-      for (let e of creepyEyes) {
-        const dist = Math.hypot(e.x - newX, e.y - newY);
-        if (dist < 80) { 
-          tooClose = true; 
-          break;
-        }
-      }
-      
+      for (let e of creepyEyes) { if (Math.hypot(e.x - newX, e.y - newY) < 80) { tooClose = true; break; } }
       if (!tooClose) {
-        creepyEyes.push({
-          x: newX,
-          y: newY,
-          size: Math.random() * 3 + 2,
-          offset: Math.random() * 8 + 10,
-          baseColor: DEFAULT_ORANGE, // ALL eyes start as orange
-          nextBlink: Date.now() + Math.random() * 5000,
-          isBlinking: false,
-          blinkEnd: 0
-        });
+        creepyEyes.push({ x: newX, y: newY, size: Math.random() * 3 + 2, offset: Math.random() * 8 + 10, baseColor: DEFAULT_ORANGE, nextBlink: Date.now() + Math.random() * 5000, isBlinking: false, blinkEnd: 0 });
       }
     }
 
@@ -709,19 +618,16 @@
       renderer.render(scene, camera);
       ctx.clearRect(0, 0, width, height);
 
-      // Draw Fog/Smoke (Using dynamic rarity color)
       fogParticles.forEach(f => {
         f.x += f.speedX;
         if (f.x - f.radius > width) { f.x = -f.radius; f.y = height - (Math.random() * 250); }
         const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius);
-        // Base color uses the dynamic RGB, fade out to transparent
         grad.addColorStop(0, `rgba(${currentFogR}, ${currentFogG}, ${currentFogB}, ${f.opacity})`); 
         grad.addColorStop(0.6, `rgba(${Math.max(0, currentFogR - 40)}, ${Math.max(0, currentFogG - 40)}, ${Math.max(0, currentFogB - 40)}, ${f.opacity * 0.4})`); 
         grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill();
       });
 
-      // Draw Embers (Keep these orange/gold as they are sparks)
       embers.forEach(p => {
         p.y += p.speedY; p.x += p.speedX + Math.sin(p.y * 0.01) * 0.3; p.opacity += Math.sin(Date.now() * p.pulseSpeed) * 0.01;
         if (p.y < -10) { p.y = height + 10; p.x = Math.random() * width; }
@@ -730,35 +636,19 @@
         ctx.shadowBlur = 14; ctx.shadowColor = p.hue === 42 ? '#f1c40f' : '#e67e22'; ctx.fill(); ctx.restore();
       });
 
-      // Draw Creepy Eyes
       creepyEyes.forEach(e => {
-        if (Date.now() > e.nextBlink) {
-          if (!e.isBlinking) {
-            e.isBlinking = true;
-            e.blinkEnd = Date.now() + 200;
-          }
-        }
-        if (e.isBlinking && Date.now() > e.blinkEnd) {
-          e.isBlinking = false;
-          e.nextBlink = Date.now() + Math.random() * 6000 + 2000; 
-        }
+        if (Date.now() > e.nextBlink) { if (!e.isBlinking) { e.isBlinking = true; e.blinkEnd = Date.now() + 200; } }
+        if (e.isBlinking && Date.now() > e.blinkEnd) { e.isBlinking = false; e.nextBlink = Date.now() + Math.random() * 6000 + 2000; }
 
         if (!e.isBlinking) {
-          // If forced, use global rarity color. If not, use default orange base color.
           const activeColor = forceEyeColor ? eyeGlowColor : e.baseColor;
-          
-          ctx.fillStyle = activeColor;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = activeColor;
-          
+          ctx.fillStyle = activeColor; ctx.shadowBlur = 15; ctx.shadowColor = activeColor;
           const sway = Math.sin(Date.now() * 0.001 + e.x) * 2;
-
           ctx.beginPath(); ctx.arc(e.x + sway, e.y, e.size, 0, Math.PI * 2); ctx.fill();
           ctx.beginPath(); ctx.arc(e.x + e.offset + sway, e.y, e.size, 0, Math.PI * 2); ctx.fill();
         }
       });
 
-      // Draw Bats
       bats.forEach(b => {
         b.x += b.speedX; b.y += Math.sin(b.x * 0.01) * 0.8; b.wingAngle += b.wingSpeed;
         if (b.x - b.size * 2 > width) { b.x = -b.size * 2; b.y = Math.random() * (height * 0.45); }
